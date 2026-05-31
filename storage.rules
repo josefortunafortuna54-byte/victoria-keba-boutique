@@ -1,0 +1,49 @@
+rules_version = '2';
+
+// ============================================================================
+// Firebase Storage Security Rules — Victoria Keba
+// Paste into Firebase Console → Storage → Rules.
+// Folders: products/ banners/ users/ categories/
+// ============================================================================
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && firestore.exists(/databases/(default)/documents/users/$(request.auth.uid))
+        && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Max 5MB, images only.
+    function validImage() {
+      return request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
+
+    // Catalog imagery — public read, admin upload.
+    match /products/{file=**} {
+      allow read: if true;
+      allow write: if isAdmin() && validImage();
+    }
+    match /banners/{file=**} {
+      allow read: if true;
+      allow write: if isAdmin() && validImage();
+    }
+    match /categories/{file=**} {
+      allow read: if true;
+      allow write: if isAdmin() && validImage();
+    }
+
+    // User avatars — public read, owner upload to own folder.
+    match /users/{userId}/{file=**} {
+      allow read: if true;
+      allow write: if isSignedIn()
+                    && request.auth.uid == userId
+                    && validImage();
+    }
+  }
+}
