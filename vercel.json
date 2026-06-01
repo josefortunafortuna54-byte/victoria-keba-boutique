@@ -1,16 +1,17 @@
 {
-  "buildCommand": "bun run build",
-  "outputDirectory": "dist",
-  "framework": null,
-  "installCommand": "bun install",
+  "functions": {
+    "dist/server/index.mjs": {
+      "runtime": "nodejs22.x"
+    }
+  },
   "routes": [
     {
       "src": "/assets/(.*)",
-      "dest": "/client/assets/$1"
+      "dest": "/dist/client/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/server/index.mjs"
+      "dest": "/dist/server/index.mjs"
     }
   ]
 }
