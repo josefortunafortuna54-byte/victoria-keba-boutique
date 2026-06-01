@@ -1,6 +1,6 @@
 {
   "functions": {
-    "dist/server/index.mjs": {
+    "api/server.js": {
       "runtime": "nodejs22.x"
     }
   },
@@ -11,7 +11,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/dist/server/index.mjs"
+      "dest": "/api/server"
     }
   ]
 }
