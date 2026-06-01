@@ -2,5 +2,15 @@
   "buildCommand": "bun run build",
   "outputDirectory": "dist",
   "framework": null,
-  "installCommand": "bun install"
+  "installCommand": "bun install",
+  "routes": [
+    {
+      "src": "/assets/(.*)",
+      "dest": "/client/assets/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/server/index.mjs"
+    }
+  ]
 }
