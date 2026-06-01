@@ -3,7 +3,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useAuth } from "@/integrations/firebase/auth";
 import { productsApi, ordersApi, couponsApi } from "@/integrations/firebase/firestore";
 import { seedCatalog } from "@/integrations/firebase/seed";
-import { uploadImages } from "@/integrations/firebase/storage";
 import type { Product, Order, Coupon } from "@/integrations/firebase/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -166,7 +165,8 @@ const EMPTY_FORM = {
 
 function ProductsTab() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [files, setFiles] = useState<FileList | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imagePreview, setImagePreview] = useState("");
   const [busy, setBusy] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -181,7 +181,7 @@ function ProductsTab() {
     e.preventDefault();
     setBusy(true);
     try {
-      const images = files && files.length ? await uploadImages("products", Array.from(files)) : editing?.images ?? [];
+      const images = imageUrl.trim() ? [imageUrl.trim()] : editing?.images ?? [];
       const data = {
         title: form.title, description: form.description, category: form.category,
         price: Number(form.price) || 0,
@@ -217,6 +217,8 @@ function ProductsTab() {
       featured: p.featured ?? false, bestSeller: p.bestSeller ?? false,
       newArrival: p.newArrival ?? false, promotion: p.promotion ?? false,
     });
+    setImageUrl(p.images?.[0] ?? "");
+    setImagePreview(p.images?.[0] ?? "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -252,9 +254,39 @@ function ProductsTab() {
         <Field label="Stock"><Input type="number" value={form.stock} onChange={(e) => f("stock", e.target.value)} /></Field>
         <Field label="Tamanhos (vírgula)"><Input value={form.sizes} onChange={(e) => f("sizes", e.target.value)} placeholder="S, M, L, XL" /></Field>
         <Field label="Cores (vírgula)"><Input value={form.colors} onChange={(e) => f("colors", e.target.value)} placeholder="Creme, Verde, Preto" /></Field>
-        <Field label="Imagens"><Input type="file" accept="image/*" multiple onChange={(e) => setFiles(e.target.files)} /></Field>
-        {editing && editing.images?.[0] && (
-          <img src={editing.images[0]} alt="" className="h-16 w-12 object-cover bg-muted" />
+        <Field label="Imagem do produto">
+          <div className="space-y-2">
+            <Input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                  const result = ev.target?.result as string;
+                  setImagePreview(result);
+                  setImageUrl(result);
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">Ou cola um URL:</p>
+            <Input
+              type="url"
+              value={imageUrl.startsWith("data:") ? "" : imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImagePreview(e.target.value); }}
+              placeholder="https://i.imgur.com/exemplo.jpg"
+            />
+          </div>
+        </Field>
+        {(imagePreview || editing?.images?.[0]) && (
+          <img
+            src={imagePreview || editing?.images?.[0]}
+            alt="Preview"
+            className="h-24 w-20 object-cover bg-muted"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
         )}
         <div className="space-y-2 pt-2">
           {(["featured", "bestSeller", "newArrival", "promotion"] as const).map((key) => (
